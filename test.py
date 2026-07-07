@@ -1,8 +1,9 @@
-import pandas as pd
-import os
+from analyse.analyzer import QuestionAnalyzer
 
-for file in os.listdir("data"):
-    if file.endswith(".xlsx"):
-        df = pd.read_excel(os.path.join("data", file))
-        print(f"\n{file}")
-        print(df.columns.tolist())
+analyzer = QuestionAnalyzer()
+
+question = "Quels clients ont fait des transactions suspectes ce mois-ci ?"
+
+result = analyzer.analyze(question)
+
+print(result)
