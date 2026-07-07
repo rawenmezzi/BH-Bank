@@ -1,0 +1,15 @@
+streamlit
+fastapi
+uvicorn
+sqlalchemy
+pandas
+python-dotenv
+google-generativeai
+langchain
+langchain-google-genai
+sentence-transformers
+faiss-cpu
+openpyxl
+pydantic
+passlib[bcrypt]
+python-jose

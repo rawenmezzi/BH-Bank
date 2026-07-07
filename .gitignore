@@ -1,2 +1,16 @@
 data/
+# Environnement virtuel
+venv/
+
+# Cache Python
+__pycache__/
+*.pyc
+
+# Variables environnement
 .env
+
+# Bases locales
+*.db
+
+# Fichiers temporaires
+*.zip
