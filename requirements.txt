@@ -13,3 +13,5 @@ openpyxl
 pydantic
 passlib[bcrypt]
 python-jose
+google-genai
+groq
