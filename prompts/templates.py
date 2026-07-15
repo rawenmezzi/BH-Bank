@@ -30,17 +30,22 @@ Aucune balise markdown. SQL brut uniquement.
 {contexte_rag}
 {mapping_section}
 === REGLES SQL OBLIGATOIRES ===
-- Utilise UNIQUEMENT les tables : customer, account, transaction,
-  balance_history, branch, card (noms en minuscules).
-- Pour relier customer et transaction : passer OBLIGATOIREMENT par account.
-  customer JOIN account ON account.customer_id = customer.customer_id
-  account  JOIN transaction ON transaction.account_id = account.account_id
+- Utilise UNIQUEMENT les tables : customer, account, "transaction",
+  balance_history, branch, card.
+- CRITIQUE : "transaction" est un mot reserve SQLite.
+  Toujours ecrire "transaction" avec des guillemets doubles.
+  CORRECT   : FROM "transaction" t
+  INCORRECT : FROM transaction
+- Pour relier customer et transaction : passer par account.
+  FROM customer c
+  JOIN account a ON a.customer_id = c.customer_id
+  JOIN "transaction" t ON t.account_id = a.account_id
 - Ajoute toujours LIMIT 20 sauf si COUNT ou SUM.
-- status = 'Active' pour les clients actifs (pas active=1).
+- status = 'Active' pour les clients actifs.
 - status = 'Inactive' pour les clients inactifs.
 - risk_level = 'High' pour haut risque.
 - amount > 8000 pour les transactions suspectes.
-- Dates : utilise date('now', '-30 days') pour les 30 derniers jours.
+- Dates : date('now', '-30 days') pour les 30 derniers jours.
 - Mois en cours : strftime('%Y-%m', colonne) = strftime('%Y-%m', 'now')
 
 === QUESTION ===
