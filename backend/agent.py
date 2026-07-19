@@ -149,8 +149,12 @@ def repondre(
     if df.empty:
         reponse_nl = "Aucun resultat trouve pour cette question dans la base de donnees."
     else:
-        resultats_str = df.head(10).to_string(index=False)
-        reponse_nl    = interpreter(question, resultats_str)
+        resultats_str = df.head(20).to_string(index=False)
+        reponse_nl = interpreter(
+            question,
+            resultats_str,
+            nombre_lignes=len(df)
+        )
 
     etapes["reponse"] = reponse_nl
 
