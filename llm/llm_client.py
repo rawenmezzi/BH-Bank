@@ -69,7 +69,7 @@ def generer_sql(prompt: str) -> str:
 # INTERPRETER RESULTAT
 # ══════════════════════════════════════════════════════════════════
 
-def interpreter(question: str, resultats: str) -> str:
+def interpreter(question: str, resultats: str, nombre_lignes: int) -> str:
     """
     Reformule les resultats SQL en langage naturel francais.
     """
@@ -80,24 +80,27 @@ def interpreter(question: str, resultats: str) -> str:
                 {
                     "role": "system",
                     "content": (
-                        "Tu es un assistant bancaire de BH Bank. "
-                        "Tu reformules les resultats de base de donnees "
-                        "en langage naturel clair et professionnel en francais. "
-                        "Maximum 5 phrases. Cite les chiffres importants."
+                        "Tu es un analyste bancaire de BH Bank. "
+                        "Reponds en francais avec 1 ou 2 phrases et 45 mots maximum. "
+                        "Donne d'abord le resultat principal, puis au maximum un fait "
+                        "complementaire utile. Utilise uniquement les informations "
+                        "explicitement presentes dans les resultats SQL. "
+                        "N'invente aucune cause, recommandation, tendance, revenu ou "
+                        "valeur absente. N'ajoute ni introduction ni formule de politesse."
                     )
                 },
                 {
                     "role": "user",
                     "content": (
                         f"Question posee : {question}\n\n"
+                        f"Nombre de lignes retournees : {nombre_lignes}\n\n"
                         f"Resultats de la base de donnees :\n{resultats}\n\n"
-                        f"Redige une reponse claire pour un employe "
-                        f"de banque non technique."
+                        "Produis une synthese factuelle, precise et professionnelle."
                     )
                 }
             ],
-            temperature=0.3,
-            max_tokens=300,
+            temperature=0.1,
+            max_tokens=120,
         )
 
         return response.choices[0].message.content.strip()
@@ -133,7 +136,8 @@ REQUETE SQL :
     print("\nTest 2 : Interpretation en francais")
     reponse = interpreter(
         question="Combien de clients actifs ?",
-        resultats="count(*) = 246"
+        resultats="count(*) = 246",
+        nombre_lignes=1
     )
     print(f"Reponse NL :\n{reponse}")
 
