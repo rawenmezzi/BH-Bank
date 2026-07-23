@@ -1,0 +1,52 @@
+[
+  {
+    "id": "clients_actifs",
+    "question": "Combien de clients actifs y a-t-il ?",
+    "sql_reference": "SELECT COUNT(*) AS nombre_clients_actifs FROM customer WHERE status = 'Active'"
+  },
+  {
+    "id": "clients_risque_eleve",
+    "question": "Combien de clients ont un profil de risque élevé ?",
+    "sql_reference": "SELECT COUNT(*) AS nombre_clients FROM customer WHERE risk_level = 'High'"
+  },
+  {
+    "id": "transactions_suspectes",
+    "question": "Combien de transactions ont un montant supérieur à 8000 ?",
+    "sql_reference": "SELECT COUNT(*) AS nombre_transactions FROM \"transaction\" WHERE amount > 8000"
+  },
+  {
+    "id": "solde_moyen_epargne",
+    "question": "Quel est le solde moyen des comptes épargne ?",
+    "sql_reference": "SELECT AVG(balance) AS solde_moyen FROM account WHERE account_type = 'Épargne'"
+  },
+  {
+    "id": "volume_par_canal",
+    "question": "Quel est le volume total des transactions par canal ?",
+    "sql_reference": "SELECT channel, SUM(amount) AS volume_total FROM \"transaction\" GROUP BY channel ORDER BY channel"
+  },
+  {
+    "id": "repartition_debit_credit",
+    "question": "Quelle est la répartition du nombre de transactions débit et crédit ?",
+    "sql_reference": "SELECT transaction_type, COUNT(*) AS nombre FROM \"transaction\" GROUP BY transaction_type ORDER BY transaction_type"
+  },
+  {
+    "id": "cartes_actives",
+    "question": "Combien de cartes sont actives ?",
+    "sql_reference": "SELECT COUNT(*) AS nombre_cartes FROM card WHERE status = 'Active'"
+  },
+  {
+    "id": "comptes_par_statut",
+    "question": "Combien de comptes existe-t-il par statut ?",
+    "sql_reference": "SELECT status, COUNT(*) AS nombre FROM account GROUP BY status ORDER BY status"
+  },
+  {
+    "id": "solde_moyen_devise",
+    "question": "Quel est le solde moyen des comptes par devise ?",
+    "sql_reference": "SELECT currency, AVG(balance) AS solde_moyen FROM account GROUP BY currency ORDER BY currency"
+  },
+  {
+    "id": "agences_plus_comptes",
+    "question": "Quelles sont les cinq agences qui gèrent le plus de comptes ?",
+    "sql_reference": "SELECT b.branch_name, COUNT(a.account_id) AS nombre_comptes FROM branch b JOIN account a ON a.branch_id = b.branch_id GROUP BY b.branch_id, b.branch_name ORDER BY nombre_comptes DESC LIMIT 5"
+  }
+]
