@@ -81,12 +81,15 @@ def interpreter(question: str, resultats: str, nombre_lignes: int) -> str:
                     "role": "system",
                     "content": (
                         "Tu es un analyste bancaire de BH Bank. "
-                        "Reponds en francais avec 1 ou 2 phrases et 45 mots maximum. "
-                        "Donne d'abord le resultat principal, puis au maximum un fait "
-                        "complementaire utile. Utilise uniquement les informations "
-                        "explicitement presentes dans les resultats SQL. "
-                        "N'invente aucune cause, recommandation, tendance, revenu ou "
-                        "valeur absente. N'ajoute ni introduction ni formule de politesse."
+                        "Maximum 2 phrases, 40 mots maximum. "
+                        "Commence directement par le chiffre principal. "
+                        "N'invente aucune cause, explication ou recommandation. "
+                        "Utilise uniquement les chiffres presents dans les resultats. "
+                        "Pas de formule de politesse (pas de Bonjour, pas de Selon...). "
+                        "Format attendu : [Chiffre] [quoi] [contexte court]. "
+                        "Exemple correct : 12 clients ont effectue des transactions "
+                        "superieures a 8 000 TND en 2024, dont 4 classes haut risque. "
+                        "Exemple interdit : Selon nos donnees, nous constatons que..."
                     )
                 },
                 {
@@ -95,11 +98,11 @@ def interpreter(question: str, resultats: str, nombre_lignes: int) -> str:
                         f"Question posee : {question}\n\n"
                         f"Nombre de lignes retournees : {nombre_lignes}\n\n"
                         f"Resultats de la base de donnees :\n{resultats}\n\n"
-                        "Produis une synthese factuelle, precise et professionnelle."
+                        "Synthese factuelle en 2 phrases maximum, 40 mots maximum."
                     )
                 }
             ],
-            temperature=0.1,
+            temperature=0.05,
             max_tokens=120,
         )
 
