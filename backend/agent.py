@@ -6,6 +6,8 @@ Question -> Analyse -> RAG -> Prompt -> LLM -> Validation -> SQLite -> Reponse N
 """
 import sys
 import os
+import json
+from datetime import datetime, timezone
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import sqlite3
@@ -15,15 +17,20 @@ from dotenv import load_dotenv
 from analyse.analyzer    import QuestionAnalyzer
 from rag.indexer         import search, INDEX_PATH
 from mapping.reader      import lire_mapping
-from prompts.templates   import prompt_sql, prompt_interpretation
+from prompts.templates   import prompt_sql
 from llm.llm_client      import generer_sql, interpreter
-from utils.sql_validator import valider_sql, nettoyer_sql
+from utils.sql_validator import (
+    nettoyer_sql,
+    type_requete_sql,
+    valider_sql,
+)
 
 load_dotenv()
 
 # ── Config ────────────────────────────────────────────────────────
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB_PATH  = os.path.join(BASE_DIR, os.getenv("DB_PATH", "database/bh_bank.db"))
+AUDIT_PATH = os.path.join(BASE_DIR, "database", "admin_audit.log")
 
 analyzer = QuestionAnalyzer()
 
@@ -92,7 +99,7 @@ def repondre(
 
     # ── ETAPE 4 : Construction du prompt ─────────────────────────
     print(f"[4/6] Construction du prompt...")
-    prompt = prompt_sql(question, contexte, mapping_text)
+    prompt = prompt_sql(question, contexte, mapping_text, role=role)
     etapes["prompt_length"] = len(prompt)
     print(f"      Prompt : {len(prompt)} caracteres")
 
@@ -115,6 +122,30 @@ def repondre(
         if not ok:
             etapes["erreur_validation"] = message
             return {"erreur": message, "sql": sql}
+
+        operation = type_requete_sql(sql)
+        if operation != "SELECT":
+            lignes_affectees, erreur = _previsualiser_action(sql)
+            if erreur:
+                print(f"      Erreur SQL : {erreur}")
+                prompt_courant = (
+                    prompt_courant
+                    + f"\n\nERREUR SQL OBTENUE : {erreur}"
+                    + f"\nSQL INCORRECT : {sql}"
+                    + "\nCorrige la requete en tenant compte de cette erreur."
+                )
+                continue
+
+            return {
+                "confirmation_requise": True,
+                "type_action": operation,
+                "sql": sql,
+                "nb_lignes_affectees": lignes_affectees,
+                "reponse": (
+                    f"Action {operation} prête. "
+                    f"{lignes_affectees} ligne(s) seraient affectée(s)."
+                ),
+            }
 
         # Execution sur SQLite
         df, erreur = _executer_sql(sql)
@@ -189,6 +220,81 @@ def _executer_sql(sql: str):
         return df, None
     except Exception as e:
         return None, str(e)
+
+
+def _previsualiser_action(sql: str):
+    """Exécute l'action dans une transaction systématiquement annulée."""
+    conn = None
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.execute("PRAGMA foreign_keys = ON")
+        conn.execute("BEGIN")
+        cursor = conn.execute(sql)
+        lignes_affectees = max(cursor.rowcount, 0)
+        conn.rollback()
+        return lignes_affectees, None
+    except Exception as error:
+        if conn:
+            conn.rollback()
+        return None, str(error)
+    finally:
+        if conn:
+            conn.close()
+
+
+def executer_action_confirmee(sql: str, username: str) -> dict:
+    """Valide à nouveau puis exécute une action administrateur atomiquement."""
+    ok, message = valider_sql(sql, role="administrateur")
+    operation = type_requete_sql(sql)
+    if not ok or operation == "SELECT":
+        return {"erreur": message if not ok else "Aucune action à exécuter."}
+
+    conn = None
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.execute("PRAGMA foreign_keys = ON")
+        conn.execute("BEGIN IMMEDIATE")
+        cursor = conn.execute(sql)
+        lignes_affectees = max(cursor.rowcount, 0)
+        conn.commit()
+        _journaliser_action(username, operation, sql, lignes_affectees)
+        return {
+            "action_executee": True,
+            "type_action": operation,
+            "nb_lignes_affectees": lignes_affectees,
+            "sql": sql,
+            "reponse": (
+                f"Action {operation} exécutée avec succès : "
+                f"{lignes_affectees} ligne(s) affectée(s)."
+            ),
+        }
+    except Exception as error:
+        if conn:
+            conn.rollback()
+        return {"erreur": f"L'action a été annulée : {error}", "sql": sql}
+    finally:
+        if conn:
+            conn.close()
+
+
+def _journaliser_action(
+    username: str,
+    operation: str,
+    sql: str,
+    lignes_affectees: int,
+) -> None:
+    entree = {
+        "date_utc": datetime.now(timezone.utc).isoformat(),
+        "utilisateur": username,
+        "operation": operation,
+        "sql": sql,
+        "lignes_affectees": lignes_affectees,
+    }
+    try:
+        with open(AUDIT_PATH, "a", encoding="utf-8") as fichier:
+            fichier.write(json.dumps(entree, ensure_ascii=False) + "\n")
+    except OSError as error:
+        print(f"Avertissement : journal admin indisponible ({error})")
 
 
 # ══════════════════════════════════════════════════════════════════
