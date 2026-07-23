@@ -15,6 +15,7 @@ from pydantic import BaseModel
 
 from backend.routes import router
 from authentification.auth import verifier_utilisateur, creer_token
+from database.history import init_history_db
 from rag.indexer import build_index, INDEX_PATH
 
 
@@ -40,7 +41,8 @@ app.include_router(router, prefix="/api")
 # ── Initialisation au démarrage ───────────────────────────────────
 @app.on_event("startup")
 async def startup():
-    """Construit l index RAG si absent."""
+    """Initialise l'historique et construit l'index RAG si absent."""
+    init_history_db()
     if not os.path.exists(INDEX_PATH):
         print("Index RAG absent. Construction...")
         build_index()
